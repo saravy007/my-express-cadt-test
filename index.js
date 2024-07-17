@@ -24,6 +24,7 @@ const { rateLimit } = require("express-rate-limit");
 // const expressAsyncHandler = require("express-async-handler");
 // const { uploadFile, getFile } = require("./controllers/file.js");
 const fileRouter = require("./routes/file.js");
+const path = require("path");
 
 const key = fs.readFileSync("localhost-key.pem", "utf-8");
 const cert = fs.readFileSync("localhost.pem", "utf-8");
@@ -40,6 +41,8 @@ const limiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
+
+app.use(express.static(path.join(__dirname, "frontend/dist")));
 app.use(limiter);
 
 dbConnect().catch((err) => {
@@ -48,11 +51,19 @@ dbConnect().catch((err) => {
 passport.use(jwtStrategy);
 app.use(bodyParser.json());
 app.use(logger);
-app.use("/auth", authRouter);
-app.use("/users", passport.authenticate("jwt", { session: false }), userRouter);
-app.use("/books", passport.authenticate("jwt", { session: false }), bookRouter);
+app.use("/api/auth", authRouter);
 app.use(
-  "/tweets",
+  "/api/users",
+  passport.authenticate("jwt", { session: false }),
+  userRouter
+);
+app.use(
+  "/api/books",
+  passport.authenticate("jwt", { session: false }),
+  bookRouter
+);
+app.use(
+  "/api/tweets",
   passport.authenticate("jwt", { session: false }),
   tweetRouter
 ); //verifyToken
@@ -67,6 +78,9 @@ app.use(errorHandle);
 // server.listen(port, () => {
 //   console.log("Listening on port 4000!");
 // });
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend/dist"));
+});
 app.listen(port, () => {
   console.log("Listening on port 4000!");
 });
