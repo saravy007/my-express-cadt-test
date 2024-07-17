@@ -1,0 +1,51 @@
+version: "1.1"
+name: Books Test
+env:
+  host: localhost:4000
+config:
+  loadTest:
+    phases:
+      - duration: 10
+        arrivalRate: 1
+tests:
+  get-books:
+    steps:
+      - name: login
+        http:
+          url: http://${{env.host}}/auth/login
+          method: POST
+          json:
+            email: "Ned0@yahoo.com"
+            password: "12345678"
+          check:
+            status: /^20/
+          headers:
+            Content-Type: application/json
+          captures:
+            token:
+              jsonpath: $.token
+      - name: GET Books
+        http:
+          url: http://${{env.host}}/books
+          method: GET
+          auth:
+            bearer:
+              token: ${{captures.token}}
+            check:
+            status: /^20/
+      - name: POST Books
+        http:
+          url: http://${{env.host}}/books
+          method: POST
+          auth:
+            bearer:
+              token: ${{captures.token}}
+          json:
+            page: ${{ number.int | fake }}
+            title: ${{ person.jobTitle | fake }}
+            description: ${{ lorem.paragraph | fake }}
+            genre: ${{ music.genre | fake }}
+          check:
+            status: /^20/
+          headers:
+            Content-Type: application/json
